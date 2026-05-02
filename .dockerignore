@@ -1,0 +1,30 @@
+# Dead code — import-guarded, not needed in production image
+sarathi_integration.py
+bucket_integration.py
+insightbridge_integration.py
+core_enforcement_compatibility.py
+
+# Test and demo files
+phase*_test.py
+phase*_demo.py
+phase*_demo_corrected.py
+live_failure_test.py
+live_determinism_test.py
+phase9_full_pipeline_test.py
+
+# Docs and local config
+*.md
+.env.example
+prompt.md
+prometheus.yml
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Dev tooling
+.git/
+.gitignore

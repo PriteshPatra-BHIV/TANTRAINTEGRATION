@@ -1,0 +1,125 @@
+version: "3.9"
+
+services:
+  dgic:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DGIC_TOKEN_SECRET_KEY=${DGIC_TOKEN_SECRET_KEY}
+      - DGIC_WORKERS=4
+      - SARATHI_URL=http://sarathi:8001
+      - CORE_URL=http://core:8002
+      - BUCKET_URL=http://bucket:8003
+      - INSIGHTBRIDGE_URL=http://insightbridge:8004
+      - ENFORCEMENT_URL=http://enforcement:8005
+      - OTEL_SERVICE_NAME=dgic-intelligence
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      - CB_FAILURE_THRESHOLD=5
+      - CB_RECOVERY_TIMEOUT_S=30
+      - RATE_LIMIT_PER_MINUTE=60
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 128M
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── Downstream service stubs (replace with real service images) ──────────────
+  sarathi:
+    image: python:3.11-slim
+    command: python -c "
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+      import json, time
+      class H(BaseHTTPRequestHandler):
+        def do_POST(self):
+          l=int(self.headers['Content-Length'])
+          d=json.loads(self.rfile.read(l))
+          eid=d.get('execution_id','')
+          r=json.dumps({'execution_id':eid,'decision':'ALLOW','reason':'approved','governance_hash':'abc123','approver_id':'sarathi'}).encode()
+          self.send_response(200); self.send_header('Content-Type','application/json'); self.end_headers(); self.wfile.write(r)
+        def log_message(self,*a): pass
+      HTTPServer(('0.0.0.0',8001),H).serve_forever()"
+    ports: ["8001:8001"]
+
+  core:
+    image: python:3.11-slim
+    command: python -c "
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+      import json
+      class H(BaseHTTPRequestHandler):
+        def do_POST(self):
+          l=int(self.headers['Content-Length'])
+          d=json.loads(self.rfile.read(l))
+          eid=d.get('execution_id','')
+          r=json.dumps({'execution_id':eid,'core_action':'allow'}).encode()
+          self.send_response(200); self.send_header('Content-Type','application/json'); self.end_headers(); self.wfile.write(r)
+        def log_message(self,*a): pass
+      HTTPServer(('0.0.0.0',8002),H).serve_forever()"
+    ports: ["8002:8002"]
+
+  enforcement:
+    image: python:3.11-slim
+    command: python -c "
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+      import json, uuid
+      class H(BaseHTTPRequestHandler):
+        def do_POST(self):
+          l=int(self.headers['Content-Length'])
+          d=json.loads(self.rfile.read(l))
+          eid=d.get('execution_id','')
+          r=json.dumps({'execution_id':eid,'trigger_id':str(uuid.uuid4()),'status':'triggered'}).encode()
+          self.send_response(200); self.send_header('Content-Type','application/json'); self.end_headers(); self.wfile.write(r)
+        def log_message(self,*a): pass
+      HTTPServer(('0.0.0.0',8005),H).serve_forever()"
+    ports: ["8005:8005"]
+
+  bucket:
+    image: python:3.11-slim
+    command: python -c "
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+      import json, uuid, hashlib
+      class H(BaseHTTPRequestHandler):
+        def do_POST(self):
+          l=int(self.headers['Content-Length'])
+          d=json.loads(self.rfile.read(l))
+          eid=d.get('execution_id','')
+          h=hashlib.sha256(json.dumps(d,sort_keys=True).encode()).hexdigest()
+          r=json.dumps({'execution_id':eid,'record_id':str(uuid.uuid4()),'hash':h}).encode()
+          self.send_response(200); self.send_header('Content-Type','application/json'); self.end_headers(); self.wfile.write(r)
+        def log_message(self,*a): pass
+      HTTPServer(('0.0.0.0',8003),H).serve_forever()"
+    ports: ["8003:8003"]
+
+  insightbridge:
+    image: python:3.11-slim
+    command: python -c "
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+      import json, uuid
+      class H(BaseHTTPRequestHandler):
+        def do_POST(self):
+          l=int(self.headers['Content-Length'])
+          d=json.loads(self.rfile.read(l))
+          eid=d.get('execution_id','')
+          r=json.dumps({'execution_id':eid,'event_id':str(uuid.uuid4())}).encode()
+          self.send_response(200); self.send_header('Content-Type','application/json'); self.end_headers(); self.wfile.write(r)
+        def log_message(self,*a): pass
+      HTTPServer(('0.0.0.0',8004),H).serve_forever()"
+    ports: ["8004:8004"]
+
+  # ── Prometheus ────────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    ports: ["9090:9090"]
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped

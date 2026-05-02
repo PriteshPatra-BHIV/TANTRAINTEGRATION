@@ -1,0 +1,40 @@
+{
+  "description": "All DGIC contract failure cases \u2014 each rejected deterministically",
+  "cases": {
+    "case1_missing_field": {
+      "input_mutation": "deleted collapse_trigger",
+      "result": "REJECTED",
+      "reason": "Missing fields: ['collapse_trigger']"
+    },
+    "case2_extra_field": {
+      "input_mutation": "added injected field",
+      "result": "REJECTED",
+      "reason": "Extra fields not allowed: ['injected']"
+    },
+    "case3_hash_tampering": {
+      "input_mutation": "decision changed ALLOW\u2192DENY without rehash",
+      "result": "REJECTED",
+      "reason": "Hash mismatch \u2014 tamper detected: stored=1b002e4604dee1c40e4e239951dd9d78e70778553f7821d54b313ee7a6bb8b98 expected=9f3ddd4f322f180d93973968d87a93ee3e1888483b23b90c96fe47e18c63fd94"
+    },
+    "case4_execution_id_mismatch": {
+      "input_mutation": "execution_id swapped to 550e8400-e29b-41d4-a716-446655440002",
+      "result": "REJECTED",
+      "reason": "Hash mismatch \u2014 tamper detected: stored=1b002e4604dee1c40e4e239951dd9d78e70778553f7821d54b313ee7a6bb8b98 expected=0dc0cb598a415acc1c395666626c4877de1ef710ea934cb1ee1b9ccc6cd6d407"
+    },
+    "case5_invalid_decision": {
+      "input_mutation": "decision set to MAYBE",
+      "result": "REJECTED",
+      "reason": "decision must be one of {'ALLOW', 'ESCALATE', 'DENY'}, got 'MAYBE'"
+    },
+    "case6_confidence_out_of_range": {
+      "input_mutation": "confidence set to 1.5",
+      "result": "REJECTED",
+      "reason": "confidence must be 0.0\u20131.0, got 1.5"
+    },
+    "case7_empty_reason_trace": {
+      "input_mutation": "reason_trace set to []",
+      "result": "REJECTED",
+      "reason": "reason_trace cannot be empty"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "description": "Valid DGIC output \u2014 RAJYA can consume directly",
+  "payload": {
+    "execution_id": "550e8400-e29b-41d4-a716-446655440001",
+    "execution_hash": "a3f90d02ccf0a750d0933bec627926ce980db9553e2bfe94ddbe4b4107211652",
+    "decision": "ESCALATE",
+    "epistemic_state": "CONTRADICTORY",
+    "confidence": 0.85,
+    "reason_trace": [
+      "Analyzed 2 input signals",
+      "Found 1 THREAT signals",
+      "Found 1 SAFE signals",
+      "H-THREAT: 1 threat signal(s) detected (confidence: 0.90)",
+      "H-SAFE: 1 safe signal(s) detected (confidence: 0.80)",
+      "Identified 1 ambiguities"
+    ],
+    "collapse_trigger": "dominance"
+  },
+  "validation_result": {
+    "status": "VALID",
+    "execution_id": "550e8400-e29b-41d4-a716-446655440001"
+  }
+}

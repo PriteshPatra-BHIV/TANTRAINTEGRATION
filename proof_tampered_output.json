@@ -1,0 +1,42 @@
+{
+  "description": "Tampered DGIC output \u2014 hash mismatch detected by RAJYA validator",
+  "original_payload": {
+    "execution_id": "550e8400-e29b-41d4-a716-446655440001",
+    "execution_hash": "f06877a5d4a917b83f298fc671c98f916b5b4fc8b65c770e76ac4a4e7e1f1e61",
+    "decision": "ALLOW",
+    "epistemic_state": "CERTAIN",
+    "confidence": 0.92,
+    "reason_trace": [
+      "Signal analysis complete",
+      "No threats detected"
+    ],
+    "collapse_trigger": "threshold"
+  },
+  "original_validation": {
+    "status": "VALID",
+    "execution_id": "550e8400-e29b-41d4-a716-446655440001"
+  },
+  "tampered_payload": {
+    "execution_id": "550e8400-e29b-41d4-a716-446655440001",
+    "execution_hash": "f06877a5d4a917b83f298fc671c98f916b5b4fc8b65c770e76ac4a4e7e1f1e61",
+    "decision": "DENY",
+    "epistemic_state": "CERTAIN",
+    "confidence": 0.92,
+    "reason_trace": [
+      "Signal analysis complete",
+      "No threats detected"
+    ],
+    "collapse_trigger": "threshold"
+  },
+  "tampered_validation": {
+    "status": "INVALID",
+    "execution_id": "550e8400-e29b-41d4-a716-446655440001",
+    "reason": "Hash mismatch \u2014 tamper detected: stored=f06877a5d4a917b83f298fc671c98f916b5b4fc8b65c770e76ac4a4e7e1f1e61 expected=5c3579d4fdbcaeaddcc44a1bc61bf814e619abcc03fba1d9430fb80b42e83fee"
+  },
+  "rejection_log": {
+    "execution_id": "550e8400-e29b-41d4-a716-446655440001",
+    "status": "REJECTED",
+    "reason": "Hash mismatch \u2014 tamper detected: stored=f06877a5d4a917b83f298fc671c98f916b5b4fc8b65c770e76ac4a4e7e1f1e61 expected=5c3579d4fdbcaeaddcc44a1bc61bf814e619abcc03fba1d9430fb80b42e83fee",
+    "tamper_type": "decision_field_mutated_without_rehash"
+  }
+}
