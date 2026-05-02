@@ -10,12 +10,11 @@ Run:
     python generate_proofs.py
 """
 
-import hashlib
 import json
-import os
 import sys
 import io
 import logging
+from pathlib import Path
 from typing import Any, Dict
 
 logging.disable(logging.CRITICAL)
@@ -23,7 +22,8 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 
 from dgic_contract_validator import validate, _recompute_hash
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
+# ── Output directory — always the script's own directory (no traversal) ────────
+_OUT_DIR = Path(__file__).resolve().parent
 
 FIXED_EID   = "550e8400-e29b-41d4-a716-446655440001"
 FIXED_EID_2 = "550e8400-e29b-41d4-a716-446655440002"
@@ -45,11 +45,12 @@ def _build_valid(eid: str, decision: str, confidence: float,
     return base
 
 
-def _write(path: str, data: Any) -> None:
-    safe_path = os.path.basename(path)
-    with open(safe_path, "w", encoding="utf-8") as f:
+def _write(filename: str, data: Any) -> None:
+    """Write proof JSON to the script directory only — no path traversal possible."""
+    out_path = _OUT_DIR / Path(filename).name  # strip any directory component
+    with out_path.open("w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
-    print(f"  wrote  {safe_path}")
+    print(f"  wrote  {out_path.name}")
 
 
 # ── Proof 1 — Valid output ─────────────────────────────────────────────────────

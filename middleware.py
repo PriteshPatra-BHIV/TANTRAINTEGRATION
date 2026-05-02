@@ -5,6 +5,7 @@ middleware.py — Production middleware for DGIC.
 """
 
 import os
+import re
 import time
 import uuid
 import threading
@@ -14,6 +15,11 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 _RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MINUTE", 60))
+# Trust X-Forwarded-For only when explicitly enabled (e.g. behind a known proxy)
+_TRUST_PROXY = os.environ.get("DGIC_TRUST_PROXY", "false").lower() == "true"
+# Prune the IP bucket map every N requests to bound memory
+_PRUNE_EVERY = 500
+_IPV4_RE = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -25,22 +31,30 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._window = 60.0
         self._buckets: dict[str, list[float]] = defaultdict(list)
         self._lock = threading.Lock()
+        self._request_count = 0
+
+    def _client_ip(self, request: Request) -> str:
+        """Resolve client IP. Only honour X-Forwarded-For when DGIC_TRUST_PROXY=true."""
+        if _TRUST_PROXY:
+            forwarded_for = request.headers.get("X-Forwarded-For", "")
+            if forwarded_for:
+                # Take only the leftmost (original client) address
+                candidate = forwarded_for.split(",")[0].strip()
+                # Basic sanity check — accept only plausible IPv4/IPv6 strings
+                if candidate and len(candidate) <= 45:
+                    return candidate
+        return request.client.host if request.client else "unknown"
 
     async def dispatch(self, request: Request, call_next):
         # Skip rate limiting for health and metrics endpoints
-        if request.url.path in ("/health", "/metrics"):
+        if request.url.path in ("/health", "/metrics", "/health/live"):
             return await call_next(request)
 
-        # Honour X-Forwarded-For so rate limiting works correctly behind a
-        # reverse proxy or load balancer. Take only the first (client) IP.
-        forwarded_for = request.headers.get("X-Forwarded-For")
-        if forwarded_for:
-            client_ip = forwarded_for.split(",")[0].strip()
-        else:
-            client_ip = request.client.host if request.client else "unknown"
+        client_ip = self._client_ip(request)
         now = time.time()
 
         with self._lock:
+            self._request_count += 1
             # Drop timestamps outside the sliding window
             self._buckets[client_ip] = [
                 t for t in self._buckets[client_ip] if now - t < self._window
@@ -54,10 +68,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     },
                 )
             self._buckets[client_ip].append(now)
-            # Evict IPs with no recent requests to prevent unbounded growth
-            if len(self._buckets[client_ip]) == 1:
-                # Just added first entry — prune any fully-expired keys
-                expired = [ip for ip, ts in self._buckets.items() if not ts]
+            # Periodically evict fully-expired IP entries to bound memory
+            if self._request_count % _PRUNE_EVERY == 0:
+                expired = [ip for ip, ts in self._buckets.items()
+                           if not ts or (now - max(ts)) >= self._window]
                 for ip in expired:
                     del self._buckets[ip]
 

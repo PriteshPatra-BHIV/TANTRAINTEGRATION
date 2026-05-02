@@ -5,8 +5,9 @@ services:
     build: .
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
-      - DGIC_TOKEN_SECRET_KEY=${DGIC_TOKEN_SECRET_KEY}
       - DGIC_WORKERS=4
       - SARATHI_URL=http://sarathi:8001
       - CORE_URL=http://core:8002
@@ -18,6 +19,8 @@ services:
       - CB_FAILURE_THRESHOLD=5
       - CB_RECOVERY_TIMEOUT_S=30
       - RATE_LIMIT_PER_MINUTE=60
+      - DGIC_DEMO_ENABLED=false
+      - DGIC_TRUST_PROXY=false
     deploy:
       resources:
         limits:

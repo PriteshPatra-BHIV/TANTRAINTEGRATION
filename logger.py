@@ -1,6 +1,5 @@
 """
 logger.py — Structured logging for all DGIC layers.
-Replaces all in-memory list-based logging with Python logging module.
 """
 
 import logging
@@ -16,6 +15,7 @@ def get_logger(name: str) -> logging.Logger:
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(logging.Formatter(LOG_FORMAT))
         logger.addHandler(handler)
+        logger.propagate = False  # prevent double-logging via root logger
 
     logger.setLevel(getattr(logging, LOG_LEVEL.upper(), logging.INFO))
     return logger

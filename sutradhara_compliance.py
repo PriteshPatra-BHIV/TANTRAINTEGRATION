@@ -17,6 +17,9 @@ from logger import get_logger
 
 _log = get_logger("sutradhara_compliance")
 
+# Background cleanup interval — purge expired sessions every 5 minutes
+_CLEANUP_INTERVAL_S = 300
+
 class InvocationSource(Enum):
     """Valid invocation sources"""
     SUTRADHARA = "sutradhara"
@@ -123,6 +126,20 @@ class SutradhaaraCompliance:
 
 # Global compliance instance
 sutradhara_compliance = SutradhaaraCompliance()
+
+# Background thread: purge expired sessions to prevent memory leak
+def _cleanup_loop() -> None:
+    while True:
+        time.sleep(_CLEANUP_INTERVAL_S)
+        try:
+            n = sutradhara_compliance.cleanup_expired_sessions()
+            if n:
+                _log.info("background_cleanup removed=%d", n)
+        except Exception as exc:  # pragma: no cover
+            _log.error("background_cleanup_error error=%s", exc)
+
+_cleanup_thread = threading.Thread(target=_cleanup_loop, daemon=True, name="session-cleanup")
+_cleanup_thread.start()
 
 
 def sutradhara_only(func: Callable) -> Callable:

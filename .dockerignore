@@ -4,6 +4,13 @@ bucket_integration.py
 insightbridge_integration.py
 core_enforcement_compatibility.py
 
+# Demo and session scripts
+get_session.py
+generate_proofs.py
+
+# Proof output files
+proof_*.json
+
 # Test and demo files
 phase*_test.py
 phase*_demo.py
@@ -14,9 +21,13 @@ phase9_full_pipeline_test.py
 
 # Docs and local config
 *.md
+.env
 .env.example
 prompt.md
 prometheus.yml
+
+# Review packets
+review_packets/
 
 # Python cache
 __pycache__/

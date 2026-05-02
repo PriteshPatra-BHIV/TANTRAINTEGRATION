@@ -261,7 +261,10 @@ async def evaluate(
 
 @app.post("/demo/create-session")
 async def create_demo_session():
-    """Demo only — creates a Sutradhara session for testing."""
+    """Demo only — disabled in production (set DGIC_DEMO_ENABLED=true to enable)."""
+    import os
+    if os.environ.get("DGIC_DEMO_ENABLED", "false").lower() != "true":
+        raise HTTPException(status_code=404, detail="Not found")
     from sutradhara_compliance import create_sutradhara_session
     session = create_sutradhara_session("tiwari_demo")
     return {

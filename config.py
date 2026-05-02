@@ -60,11 +60,19 @@ ENFORCEMENT_TIMEOUT_S = int(os.environ.get("ENFORCEMENT_TIMEOUT_S", 10))
 # DGIC service own port
 DGIC_PORT = int(os.environ.get("DGIC_PORT", 8000))
 
+# Minimum secret key length (32 bytes = 64 hex chars)
+_MIN_SECRET_LEN = 32
+
+
 def validate_production_config():
-    """Raise if critical production config is missing."""
+    """Raise if critical production config is missing or insecure."""
     if not TOKEN_SECRET_KEY:
         raise EnvironmentError(
-            "DGIC_TOKEN_SECRET_KEY environment variable is not set. "
-            "This is required for production. "
-            "Set it to a cryptographically random 64-character hex string."
+            "DGIC_TOKEN_SECRET_KEY is not set. "
+            "Generate with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+    if len(TOKEN_SECRET_KEY) < _MIN_SECRET_LEN:
+        raise EnvironmentError(
+            f"DGIC_TOKEN_SECRET_KEY is too short ({len(TOKEN_SECRET_KEY)} chars). "
+            f"Minimum {_MIN_SECRET_LEN} characters required."
         )
